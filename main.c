@@ -4,9 +4,6 @@
 #include <stdio.h>  // printf, fprintf
 #include <string.h> // memcmp, strlen
 
-#define STR(x) #x
-#define XSTR(x) STR(x)
-
 #define ERR_USAGE    64
 #define ERR_COMPILE  65
 #define ERR_RUNTIME  70
@@ -148,7 +145,8 @@ typedef struct {
   int len;
 } Keyword;
 
-// The table of reserved words and their associated token types.
+#define KEYWORD_MIN_LEN 2
+#define KEYWORD_MAX_LEN 6
 static Keyword keywords[] = {
   {TOKEN_AND,    "and",    3},
   {TOKEN_CLASS,  "class",  5},
@@ -168,10 +166,8 @@ static Keyword keywords[] = {
   {TOKEN_WHILE,  "while",  5},
   {TOKEN_EOF,    NULL,     0}
 };
-#define MIN_KEYWORD_LEN 2
-#define MAX_KEYWORD_LEN 6
 
-#define MAX_SCANNER_TOKENS 1024
+#define SCANNER_MAX_TOKENS 1024
 typedef struct {
   // const char *source;
   const char *cursor;
@@ -179,7 +175,7 @@ typedef struct {
   int line;
   int num_tokens;
   bool eof;
-  Token tokens[MAX_SCANNER_TOKENS];
+  Token tokens[SCANNER_MAX_TOKENS];
 } Scanner;
 
 void scanner_init(Scanner *s, const char *source) {
@@ -253,7 +249,7 @@ void scan_identifier(Scanner *s) {
 
     TokenType type = TOKEN_IDENTIFIER;
     ptrdiff_t len = s->cursor - s->token_start;
-    if (MIN_KEYWORD_LEN <= len && len <= MAX_KEYWORD_LEN) {
+    if (KEYWORD_MIN_LEN <= len && len <= KEYWORD_MAX_LEN) {
         for (Keyword *keyword = keywords; keyword->name; keyword++) {
             if (len == keyword->len && memcmp(s->token_start, keyword->name, len) == 0) {
                 type = keyword->type;
