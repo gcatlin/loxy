@@ -1,6 +1,7 @@
 clox
 loxy
 loxy.dSYM
+.vscode/
 
 # Prerequisites
 *.d

@@ -1,5 +1,14 @@
 ## TODO
+- eval_file
+    - separate fsize and read_file?
+    - grow buffer to match file size
+    - or change read_file to alloc and return byte array?
 - parsing: synchronize
+- str
+    - change to `span`?
+    - `string` and `str`
+        - one is mutable stretchy buffer for strings w/ null-terminators
+        - other is immutable span of chars but tailored to strings
 - logger
     - rename error.c to log.c? or add log.c?
     - move `info` into `report` and generalize

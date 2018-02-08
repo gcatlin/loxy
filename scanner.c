@@ -22,6 +22,13 @@ typedef struct {
     int col;  // DELETE?
 } Scanner;
 
+void scanner_pp(const Scanner *s)
+{
+    printf("[Expr %p:%s] token:\"%s\" cursor:\"%s\"\n",
+            (void *) s, bool_str(s->eof), unescaped(s->token), unescaped(s->cursor));
+    printf("  Token: "); token_pp(&s->tokens[-1]);
+}
+
 bool is_alpha(const char c)
 {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
@@ -37,15 +44,7 @@ bool is_alphanumeric(const char c)
     return is_alpha(c) || is_digit(c);
 }
 
-void scanner_init(Scanner *restrict s, Buffer *restrict b)
-{
-    s->buffer = b;
-    s->cursor = b->head;
-    s->token = b->head;
-    s->eof = false;
-}
-
-str last_line_str(Scanner *s)
+str scanner_last_line_str(const Scanner *s)
 {
     const char *line = buffer_last_line(s->buffer);
     return str_new_s(line, strchr(line, '\n') - line);
@@ -57,7 +56,7 @@ Token *add_token_span(Scanner *restrict s, const TokenType type,
     Token *t = s->tokens++;
     t->type = type;
     t->name = str_new_s(from, to-from);
-    // info(s->buffer->num_lines, last_line_str(s), t->name, token_type_str(t));
+    // info(s->buffer->num_lines, scanner_last_line_str(s), t->name, token_type_name(t));
     return t;
 }
 
@@ -72,6 +71,7 @@ char advance(Scanner *s)
     s->cursor++;
     s->eof = (*s->cursor == '\0');
     if (c == '\n') {
+        // Or call a registered callback fn, e.g. s->newline_cb (take a char *)
         buffer_add_line(s->buffer, s->cursor);
     }
     return c;
@@ -79,7 +79,8 @@ char advance(Scanner *s)
 
 void scanner_error(const Scanner *restrict s, const char *restrict message)
 {
-    error(s->line, s->col, message);
+    error(s->buffer->num_lines, scanner_last_line_str(s),
+            str_new_s(s->token, s->cursor - s->token - 1), message);
 }
 
 bool scanner_match(Scanner *restrict s, const char expected)
@@ -133,6 +134,7 @@ Token *scan_string(Scanner *s)
     scan_until(s, '"');
     if (s->eof) {
         scanner_error(s, "Unterminated string.");
+        exit(1);
         return &TokenNone;
     }
     // Consume the closing double-quote and return string excluding quotes
@@ -174,16 +176,21 @@ Token *scan_token(Scanner *s)
                        return scan_identifier(s);
                    } else {
                        scanner_error(s, "Unexpected character.");
+                       exit(1);
                    }
     }
     return &TokenNone;
 }
 
-static Token *scan(Scanner *s)
+static Token *scan(Scanner *s, Buffer *b, Token *tokens)
 {
+    s->buffer = b;
+    s->cursor = b->head;
+    s->token  = b->head;
+    s->tokens = tokens;
+    s->eof = false;
     while (!s->eof) {
         scan_token(s);
     }
-    // FIXME return pointer to first Token
-    return s->tokens;
+    return tokens;
 }

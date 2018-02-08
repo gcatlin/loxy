@@ -55,7 +55,7 @@ typedef enum {
     TOKEN_EOF
 } TokenType;
 
-static const char *TokenTypeNames[] = {
+static const char *token_type_names[] = {
     "TOKEN_NONE",
 
     "TOKEN_BANG",
@@ -147,12 +147,12 @@ static Keyword keywords[NUM_KEYWORDS] = {
     {TOKEN_EOF,    {0}}
 };
 
-str token_type_str(const Token *t) {
-    return str_new(TokenTypeNames[t->type]);
+const char *token_type_name(const Token *t) {
+    return token_type_names[t->type];
 }
 
-void token_print(const Token *t) {
-    printf("[Token %p:%s] \"%.*s\"\n", (void *) t, TokenTypeNames[t->type],
+void token_pp(const Token *t) {
+    printf("[Token %p:%s] \"%.*s\"\n", (void *) t, token_type_name(t),
             t->name.len, t->name.head);
 }
 

@@ -19,7 +19,6 @@
 
 #define FILENAME_STYLE  ANSI_RESET
 #define LINE_STYLE      ANSI_RESET
-#define UNDERLINE_STYLE ANSI_RESET ANSI_FG_GREEN // maybe INFO_LINE_STYLE???
 #define LINE_NUM_STYLE  ANSI_RESET ANSI_FG_BLUE
 #define COL_NUM_STYLE   ANSI_RESET ANSI_FG_CYAN
 #define MESSAGE_STYLE   ANSI_RESET ANSI_BOLD
@@ -48,24 +47,26 @@ int digits(unsigned int v) {
 // 31 |  }
 //    |  - first borrow ends here
 //
-void report(const int line, const int col, const char *restrict where, const char *restrict message) {
-    // fprintf(stderr, "error [%d:%d] %s\n", (where ? " " : ""), where, line, col, message);
-    fprintf(stderr, ANSI_BOLD ANSI_FG_RED "error[E0000]" ANSI_RESET
-            ANSI_BOLD ": %s" ANSI_RESET "\n", message);
-    // fprintf(stderr, ANSI_FG_BLUE  "  --> " ANSI_RESET "%s:%d:%d\n", "unknown", line, col);
-    fprintf(stderr, ANSI_FG_BLUE " %d | "  ANSI_RESET "%s\n", line, "source goes here");
-    fprintf(stderr, ANSI_FG_BLUE  "   | "  ANSI_RESET "%s\n", "^");
-    // fprintf(stderr, ANSI_FG_BLUE "   | "  ANSI_RESET "\n");
-    // (where ? " " : ""), where, line, col, message);
+typedef enum {
+    LOG_LVL_INFO,
+    LOG_LVL_ERROR,
+} LogLevel;
 
-    had_error = true;
-}
+typedef struct {
+    const char *level;
+    const char *style;
+    const char *underline;
+} LogLevelConfig;
 
-// TODO larger buffer and fill using `memset`
-static const char* carets = "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^";
-static const char* dashes = "------------------------------------------------------------";
+static LogLevelConfig log_levels[] = {
+    {"info",  INFO_STYLE,  "------------------------------------------------------------"},
+    {"error", ERROR_STYLE, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"},
+};
 
-void info(const int line_num, const str line, const str substr, const str message) {
+void report(const LogLevel level, const char *restrict filename, const int line_num,
+        const str line, const str substr, const char *restrict message)
+{
+    LogLevelConfig config = log_levels[level];
     const int substr_offset = substr.head - line.head;
     const str before_substr = str_slice(line, 0, substr_offset);
     const str after_substr = str_slice(line, substr_offset + substr.len, line.len);
@@ -73,25 +74,33 @@ void info(const int line_num, const str line, const str substr, const str messag
     const int padding = digits(line_num);
 
     // Message
-    fprintf(stderr, INFO_STYLE "info");
-    fprintf(stderr, MESSAGE_STYLE": %.*s\n", message.len, message.head);
+    fprintf(stderr, "%s%s", config.style, config.level);
+    // fprintf(stderr, "%s", level);
+    fprintf(stderr, MESSAGE_STYLE ": %s\n", message);
     fprintf(stderr, LINE_NUM_STYLE " %*s--> ", padding, "");
     fprintf(stderr, FILENAME_STYLE "%s" LINE_NUM_STYLE ":%d" COL_NUM_STYLE ":%d\n",
-            "unknown", line_num, col);
+            "unknown", line_num, col); // FIXME filename
     fprintf(stderr, LINE_NUM_STYLE " %*s | \n", padding, "");
     fprintf(stderr, LINE_NUM_STYLE " %d | ", line_num);
 
     // Code
     fprintf(stderr, LINE_STYLE "%.*s", before_substr.len, before_substr.head);
-    fprintf(stderr, INFO_STYLE "%.*s", substr.len, substr.head);
+    fprintf(stderr, "%s%.*s", config.style, substr.len, substr.head);
     fprintf(stderr, LINE_STYLE "%.*s\n", after_substr.len, after_substr.head);
 
     // Annotation
     fprintf(stderr, LINE_NUM_STYLE " %*s | ", padding, "");
-    fprintf(stderr, UNDERLINE_STYLE "%*s%.*s", substr_offset, "", substr.len, carets);
-    fprintf(stderr, INFO_STYLE " %*s" ANSI_RESET "\n\n", message.len, message.head);
+    fprintf(stderr, "%s%*s%.*s", config.style, substr_offset, "", substr.len, config.underline);
+    fprintf(stderr, " %s%s" ANSI_RESET "\n", config.style, message);
 }
 
-void error(const int line, const int col, const char *message) {
-    report(line, col, "Error", message);
+void info(const int line_num, const str line, const str substr, const char *message)
+{
+    report(LOG_LVL_INFO, "unknown", line_num, line, substr, message);
+}
+
+void error(const int line_num, const str line, const str substr, const char *message)
+{
+    report(LOG_LVL_ERROR, "unknown", line_num, line, substr, message);
+    had_error = true;
 }

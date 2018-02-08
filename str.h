@@ -32,7 +32,7 @@ static char *str_to_char(const str s) {
     return buf;
 }
 
-void str_println(const str s) {
+void str_pp(const str s) {
     printf("[str %p:%d] \"%.*s\"\n", (void *) s.head, s.len, s.len, s.head);
 }
 // struct {

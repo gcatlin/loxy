@@ -8,15 +8,18 @@
 //
 // Look for more ideas here:
 //   https://github.com/golang/go/wiki/SliceTricks
+//   https://github.com/golang/go/blob/master/src/strings/builder.go
 //
 // Ideas:
-//   arr_popn(T *a, int n) pop multiple items, return pointer to first dropped item (remove?)
-//   arr_reset(T *a)       instead of arr_clear ?
-//   arr_drop(T *a, int n) remove n items from the beginning
-//   arr_take(T *a, int n) keep n items from the beginning, remove the rest
+//   arr_popn(T *a, int n)  pop multiple items, return pointer to first dropped item (remove?)
+//   arr_grow(T *a, int n)  instead of arr_reserve ?
+//   arr_reset(T *a)        instead of arr_clear ?
+//   arr_drop(T *a, int n)  remove n items from the beginning
+//   arr_trunc(T *a, int n) instead of arr_drop?
+//   arr_take(T *a, int n)  keep n items from the beginning, remove the rest
+//   arr_resize(T *a, int len, int cap) // grow and set len and cap?
 //
 // arr_add(T *a, int n)          adds n uninitialized elements at end of array, returns pointer to first added element
-// arr_clear(T *a)               set count to 0
 // arr_concat(T *a, T *b, int n) appends a copy of b to the end of a, returns pointer to the first added element
 // arr_copy(T *a, T *b, int n)   copies n elements from b into a
 // arr_count(T *a)               returns the number of elements in the array
@@ -28,10 +31,10 @@
 // arr_pop(T *a)                 removes the last element of the array and returns it
 // arr_push(T *a, T v)           adds v on the end of the array
 // arr_reserve(T *a, int n)      ensures at least n unintialized elements are allocated, returns pointer to first reserved element
+// arr_reset(T *a)               set count to 0
 // a[n]                          access the nth (counting from 0) element of the array
 //
 #define arr_add(a, n)       (_arr_maybe_grow(a,n), _arr_cnt(a)+=(n), &(a)[_arr_cnt(a)-(n)])
-#define arr_clear(a)        ((a) ? _arr_cnt(a)=0 : 0)
 #define arr_concat(a, b, n) (_arr_maybe_grow(a,n), _arr_cnt(a)+=(n), memcpy(&(a)[_arr_cnt(a)-(n)], (b), (n)))
 #define arr_copy(a, b, n)   (_arr_maybe_grow(a,n), _arr_cnt(a)=(n), memcpy(&(a)[0], (b), (n)))
 #define arr_count(a)        ((a) ? _arr_cnt(a) : 0)
@@ -43,7 +46,8 @@
 #define arr_pop(a)          ((a)[--_arr_cnt(a)])
 #define arr_push(a, v)      (_arr_maybe_grow(a,1), (a)[_arr_cnt(a)++]=(v))
 #define arr_reserve(a, n)   (_arr_maybe_grow(a,n), (a)[_arr_cnt(a)])
-#define arr_println(a)      (printf("[arr %p:%d:%d] \"%.*s\"\n",(void*)(a),arr_count(a),arr_limit(a),arr_count(a),(a)))
+#define arr_reset(a)        ((a) ? _arr_cnt(a)=0 : 0)
+#define arr_pp(a)           (printf("[arr %p:%d:%d] \"%.*s\"\n",(void*)(a),arr_count(a),arr_limit(a),arr_count(a),(a)))
 
 #define _arr_raw(a) ((int *)(a)-2)
 #define _arr_lim(a) _arr_raw(a)[0]

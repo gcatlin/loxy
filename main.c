@@ -43,44 +43,43 @@ int read_file(char *restrict buf, const size_t n, const char *restrict path)
 void print(Expr *e)
 {
     static char *buf = NULL;
+    arr_reset(buf);
     buf = expr_sprint(buf, e);
     printf("%.*s\n", arr_count(buf), buf);
 }
 
-Expr *eval(Buffer *restrict b, Scanner *restrict s, Parser *restrict p)
+Expr *eval(Buffer *restrict b, Scanner *restrict s, Parser *restrict p, Token *restrict ts)
 {
-    scanner_init(s, b);
-    scan(s);
-    return parse(p);
+    return parse(p, scan(s, b, ts));
 }
 
-void eval_file(Buffer *restrict b, Scanner *restrict s, Parser *restrict p, const char *restrict path)
+void eval_file(Buffer *restrict b, Scanner *restrict s, Parser *restrict p,
+        Token *restrict ts, const char *restrict path)
 {
     // TODO use arr instead?
-    b->name = path;
-    int n = read_file(b->head, BUFFER_MAX_LEN, path);
-    b->len = n;
+    // b->name = path;
+    b->len = read_file(b->head, BUFFER_MAX_LEN, path);
 
-    print(eval(b, s, p));
+    print(eval(b, s, p, ts));
 
     if (had_error) {
         exit(ERR_COMPILE);
     }
 }
 
-void repl(Buffer *restrict b, Scanner *restrict s, Parser *restrict p)
+void repl(Buffer *restrict b, Scanner *restrict s, Parser *restrict p, Token *restrict ts)
 {
     b->name = "repl";
     for (;;) {
         fputs(ANSI_BOLD "loxy> " ANSI_RESET, stdout);
         if (!fgets(b->head, BUFFER_MAX_LEN, stdin)) {
-            puts("");
+            fputs(ANSI_RESET "\n", stdout);
             break;
         }
         if (b->head[0] != '\n') {
-            b->num_lines = 1;
-            eval(b, s, p);
+            print(eval(b, s, p, ts));
         }
+        buffer_reset(b);
         had_error = false;
     }
 }
@@ -89,20 +88,13 @@ int main(int argc, const char *argv[])
 {
     Buffer b;
     buffer_init(&b, BUFFER_MAX_LEN, BUFFER_MAX_LINES);
-
-    Token *tokens = malloc(sizeof(Token) * MAX_TOKENS);
-
     Scanner *s = malloc(sizeof(Scanner));
-    s->tokens = tokens;
-
     Parser *p = malloc(sizeof(Parser));
-    p->eof = false;
-    p->cursor = p->tokens = s->tokens;
-    // p->buffer = &b;
+    Token *ts = malloc(sizeof(Token) * MAX_TOKENS);
 
     switch (argc) {
-        case 1: repl(&b, s, p); break;
-        case 2: eval_file(&b, s, p, argv[1]); break;
+        case 1: repl(&b, s, p, ts); break;
+        case 2: eval_file(&b, s, p, ts, argv[1]); break;
         default: fputs("Usage: loxy [path]\n", stderr); return ERR_USAGE;
     }
 }
