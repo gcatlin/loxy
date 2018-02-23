@@ -1,3 +1,5 @@
+!a
+print "abc"
 fn main() {
     return 1.013 + 2.027; // this is a comment
 }

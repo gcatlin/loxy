@@ -43,9 +43,11 @@ int read_file(char *restrict buf, const size_t n, const char *restrict path)
 void print(Expr *e)
 {
     static char *buf = NULL;
-    arr_reset(buf);
-    buf = expr_sprint(buf, e);
-    printf("%.*s\n", arr_count(buf), buf);
+    if (e) {
+        arr_reset(buf);
+        buf = expr_sprint(buf, e);
+        printf("%.*s\n", arr_count(buf), buf);
+    }
 }
 
 Expr *eval(Buffer *restrict b, Scanner *restrict s, Parser *restrict p, Token *restrict ts)
@@ -60,11 +62,11 @@ void eval_file(Buffer *restrict b, Scanner *restrict s, Parser *restrict p,
     // b->name = path;
     b->len = read_file(b->head, BUFFER_MAX_LEN, path);
 
-    print(eval(b, s, p, ts));
-
+    Expr *e = eval(b, s, p, ts);
     if (had_error) {
         exit(ERR_COMPILE);
     }
+    print(e);
 }
 
 void repl(Buffer *restrict b, Scanner *restrict s, Parser *restrict p, Token *restrict ts)

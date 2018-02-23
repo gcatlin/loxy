@@ -75,36 +75,37 @@ bool match(Parser *p, int n, ...)
     return false;
 }
 
-// void synchronize(Parser *p) {
-//     parser_advance(p);
-//
-//     while (!p->eof) {
-//         if (p->cursor->type == TOKEN_SEMICOLON) {
-//             return;
-//         }
-//
-//         switch (parser_peek(p)->type) {
-//             case TOKEN_CLASS:
-//             case TOKEN_FN:
-//             case TOKEN_VAR:
-//             case TOKEN_FOR:
-//             case TOKEN_IF:
-//             case TOKEN_WHILE:
-//             case TOKEN_PRINT:
-//             case TOKEN_RETURN:
-//                 return;
-//             default:
-//                 break;
-//         }
-//
-//         parser_advance(p);
-//     }
-// }
+ void synchronize(Parser *p) {
+     parser_advance(p);
+
+     while (!p->eof) {
+         if (p->cursor[-1].type == TOKEN_SEMICOLON) {
+             return;
+         }
+
+         switch (p->cursor->type) {
+             case TOKEN_CLASS:
+             case TOKEN_FN:
+             case TOKEN_VAR:
+             case TOKEN_FOR:
+             case TOKEN_IF:
+             case TOKEN_WHILE:
+             case TOKEN_PRINT:
+             case TOKEN_RETURN:
+                 return;
+             default:
+                 break;
+         }
+
+         parser_advance(p);
+     }
+ }
 
 Expr *expression(Parser *p);
 
 Expr *primary(Parser *p)
 {
+    // printf("primary: \"%.*s\"\n", (p->cursor-1)->lexeme.len, (p->cursor-1)->lexeme.head);
     if (match(p, 1, TOKEN_NIL))    return make_nil_expr(p->cursor-1);
     if (match(p, 1, TOKEN_FALSE))  return make_bool_expr(p->cursor-1, false);
     if (match(p, 1, TOKEN_TRUE))   return make_bool_expr(p->cursor-1, true);
@@ -123,7 +124,7 @@ Expr *primary(Parser *p)
 
 Expr *unary(Parser *p)
 {
-    if (match(p, 2, TOKEN_BANG, TOKEN_MINUS)) {
+    if (match(p, 3, TOKEN_BANG, TOKEN_PLUS, TOKEN_MINUS)) {
         Token *op = p->cursor-1;
         Expr *rhs = unary(p);
         return make_unary_expr(op, rhs);
@@ -182,9 +183,18 @@ Expr *expression(Parser *p)
 
 Expr *parse(Parser *p, Token *tokens)
 {
+    if (tokens->type == TOKEN_NONE) {
+        had_error = true;
+        return NULL;
+    }
     p->tokens = tokens;
     p->cursor = p->tokens;
     p->eof = false;
     exprs_count = 0;
-    return expression(p);
+
+    Expr *e = expression(p);
+    if (e->type == EXPR_NONE) {
+        return NULL;
+    }
+    return e;
 }

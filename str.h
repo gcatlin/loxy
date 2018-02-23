@@ -6,30 +6,33 @@ typedef struct {
     const int len;
 } str;
 
-static str str_new(const char *s) {
+str str_new(const char *s) {
     return (str) { .head = s, .len = strlen(s) };
 }
 
-static str str_new_s(const char *s, const int len) {
+str str_new_s(const char *s, const int len) {
     return (str) { .head = s, .len = len };
 }
 
-static int str_ncmp(const str lhs, const str rhs, const int count) {
+int str_ncmp(const str lhs, const str rhs, const int count) {
     // TODO bounds check `count`
     return strncmp(lhs.head, rhs.head, count);
 }
 
-static str str_slice(const str s, const int from, const int to) {
+str str_slice(const str s, const int from, const int to) {
     // TODO bounds check `from` and `to`
+    // TODO handle negative `from` (count from end)
+    // TODO handle negative `to` (count from end)
     return (str) { .head = s.head+from, .len = to-from };
 }
 
-static char *str_to_char(const str s) {
-    // FIXME @leak this will leak memory!!!!
-    static char *buf = {0};
-    buf = arr_concat(buf, s.head, s.len);
-    arr_push(buf, '\0');
-    return buf;
+char *str_to_char(const str s) {
+    static char str_to_char_buffer[65536];
+    static char *cursor = str_to_char_buffer;
+    char *dest = strncpy(cursor, s.head, s.len);
+    cursor[s.len] = '\0';
+    cursor += s.len + 2;
+    return dest;
 }
 
 void str_pp(const str s) {

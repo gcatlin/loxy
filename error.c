@@ -8,6 +8,7 @@
 #define ERR_COMPILE  65
 #define ERR_RUNTIME  70
 #define ERR_FILE     74
+#define ERR_SCANNER  80
 
 #define ANSI_RESET     "\x1b[0m"
 #define ANSI_BOLD      "\x1b[1m"

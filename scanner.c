@@ -44,10 +44,45 @@ bool is_alphanumeric(const char c)
     return is_alpha(c) || is_digit(c);
 }
 
-str scanner_last_line_str(const Scanner *s)
+int scanner_find_token_line_index(const Scanner *s)
 {
-    const char *line = buffer_last_line(s->buffer);
-    return str_new_s(line, strchr(line, '\n') - line);
+    int line_index = buffer_find_line(s->buffer, s->token);
+    if (line_index == -1) {
+        fprintf(stderr, "Could not find token in scanner buffer; char %ld (%d lines)\n",
+                s->token - s->buffer->head,
+                s->buffer->num_lines);
+        exit(ERR_SCANNER);
+    }
+    return line_index;
+}
+
+str scanner_buffer_line(const Scanner *s, int line_index)
+{
+    return buffer_get_line(s->buffer, line_index);
+}
+
+str scanner_token_range(const Scanner *s, str line)
+{
+    const char *end = line.head + line.len;
+    int len = (end < s->cursor ? end : s->cursor) - s->token;
+    return str_new_s(s->token, len);
+
+}
+
+void scanner_error(const Scanner *restrict s, const char *restrict message)
+{
+    int line_index = scanner_find_token_line_index(s);
+    str line = scanner_buffer_line(s, line_index);
+    str range = scanner_token_range(s, line);
+    error(line_index+1, line, range, message);
+}
+
+void scanner_info(const Scanner *restrict s, const char *restrict message)
+{
+    int line_index = scanner_find_token_line_index(s);
+    str line = scanner_buffer_line(s, line_index);
+    str range = scanner_token_range(s, line);
+    info(line_index+1, line, range, token_type_name(s->tokens-1));
 }
 
 Token *add_token_span(Scanner *restrict s, const TokenType type,
@@ -55,8 +90,8 @@ Token *add_token_span(Scanner *restrict s, const TokenType type,
 {
     Token *t = s->tokens++;
     t->type = type;
-    t->name = str_new_s(from, to-from);
-    // info(s->buffer->num_lines, scanner_last_line_str(s), t->name, token_type_name(t));
+    t->lexeme = str_new_s(from, to-from);
+    scanner_info(s, token_type_name(t));
     return t;
 }
 
@@ -75,12 +110,6 @@ char advance(Scanner *s)
         buffer_add_line(s->buffer, s->cursor);
     }
     return c;
-}
-
-void scanner_error(const Scanner *restrict s, const char *restrict message)
-{
-    error(s->buffer->num_lines, scanner_last_line_str(s),
-            str_new_s(s->token, s->cursor - s->token - 1), message);
 }
 
 bool scanner_match(Scanner *restrict s, const char expected)
@@ -134,7 +163,7 @@ Token *scan_string(Scanner *s)
     scan_until(s, '"');
     if (s->eof) {
         scanner_error(s, "Unterminated string.");
-        exit(1);
+        // exit(1);
         return &TokenNone;
     }
     // Consume the closing double-quote and return string excluding quotes
@@ -188,6 +217,7 @@ static Token *scan(Scanner *s, Buffer *b, Token *tokens)
     s->cursor = b->head;
     s->token  = b->head;
     s->tokens = tokens;
+    *s->tokens = TokenNone;
     s->eof = false;
     while (!s->eof) {
         scan_token(s);

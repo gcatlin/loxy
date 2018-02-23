@@ -108,7 +108,7 @@ static const char *token_type_names[] = {
 
 typedef struct {
     TokenType type;
-    str name;
+    str lexeme;
     // const Loc loc;
     // const char *pos; // delete?
     // int len; // delete?
@@ -153,7 +153,7 @@ const char *token_type_name(const Token *t) {
 
 void token_pp(const Token *t) {
     printf("[Token %p:%s] \"%.*s\"\n", (void *) t, token_type_name(t),
-            t->name.len, t->name.head);
+            t->lexeme.len, t->lexeme.head);
 }
 
 Keyword *find_keyword(const str name) {

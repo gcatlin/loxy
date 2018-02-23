@@ -8,6 +8,9 @@
 #include <stdio.h>  // printf, fprintf
 #include <string.h> // memcmp, memcpy, memcpy_s, strlen
 
+#define min(a,b) ((a)<(b)?(a):(b))
+#define max(a,b) ((a)>(b)?(a):(b))
+
 #include "arr.h"
 #include "str.h"
 
@@ -19,7 +22,7 @@ const char *bool_str(bool b)
 char *unescaped(const char *s)
 {
     // TODO Use strpbrk and memcpy instead?
-    static char *buf = {0};
+    static char *buf = NULL;
     arr_reset(buf);
     char c;
     while ((c = *(s++))) {
@@ -69,6 +72,11 @@ typedef struct {
     int num_lines; // do not modify directly
 } Buffer;
 
+// typedef struct {
+//     int num_lines;
+//     str lines[];
+// } LineIndex;
+
 void buffer_reset(Buffer *b)
 {
     b->len = 0;
@@ -92,9 +100,33 @@ static int buffer_add_line(Buffer *restrict b, char *restrict line)
     return b->num_lines;
 }
 
-static char *buffer_last_line(Buffer *b)
+static int buffer_find_line(Buffer *restrict b, const char *restrict c)
 {
-    return b->lines[b->num_lines-1];
+    // TODO bounds check `c`
+    int mid;
+    int low = 0;
+    int high = b->num_lines - 1;
+    while (low <= high) {
+        mid = (low + high) / 2;
+        if (c < b->lines[mid]) high = mid - 1;
+        else if (c > b->lines[mid]) low = mid + 1;
+        else return mid;
+    }
+    return mid;
+}
+
+static str buffer_get_line(Buffer *b, int line_index)
+{
+    // TODO bounds check
+    char *line = b->lines[line_index];
+    // does not include tailing \n or \0
+    char *end = strchr(line, '\n');
+    return str_new_s(line, end - line);
+}
+
+static str buffer_last_line(Buffer *b)
+{
+    return buffer_get_line(b, b->num_lines-1);
 }
 
 // static str buffer_last_line_str(Buffer *b)

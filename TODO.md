@@ -1,4 +1,6 @@
 ## TODO
+- use more str, fewer char *
+- fix unary `!a` eval
 - eval_file
     - separate fsize and read_file?
     - grow buffer to match file size
@@ -16,4 +18,5 @@
         - update `info` and `error` to use `report` properly
     - no ansi stuff if `!istty`
 - rename `scanner.c` to `lexer.c`?
+- separate line indexing from `Buffer`
 - better memory management
