@@ -2,7 +2,7 @@
 
 Lox in C (from [Crafting Interpreters: A Tree-walk Interpreter](http://www.craftinginterpreters.com/a-tree-walk-interpreter.html))
 
-```
+```sh
 make && ./loxy
 ```
 
