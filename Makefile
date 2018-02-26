@@ -5,5 +5,10 @@ CC_FLAGS = -g -std=c11 -Wall -Wextra -Wpedantic \
 		   -fsanitize=address
 CC = clang
 
-all:
-	${CC} ${SRC_FILES} ${CC_FLAGS} -o ${NAME}
+all: build
+
+build:
+	@${CC} ${SRC_FILES} ${CC_FLAGS} -o ${NAME}
+
+run: build
+	@./${NAME}
