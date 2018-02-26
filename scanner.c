@@ -121,6 +121,12 @@ bool scanner_match(Scanner *restrict s, const char expected)
     return true;
 }
 
+Token *add_token_for(Scanner *s, const char c,
+        const TokenType matched, const TokenType unmatched)
+{
+    return add_token(s, scanner_match(s, c) ? matched : unmatched);
+}
+
 void scan_until(Scanner *s, const char until)
 {
     char c;
@@ -190,10 +196,10 @@ Token *scan_token(Scanner *s)
         case '-':  return add_token(s, TOKEN_MINUS);
         case '+':  return add_token(s, TOKEN_PLUS);
         case '*':  return add_token(s, TOKEN_STAR);
-        case '!':  return add_token(s, scanner_match(s, '=') ? TOKEN_BANG_EQUAL : TOKEN_BANG);
-        case '=':  return add_token(s, scanner_match(s, '=') ? TOKEN_EQUAL_EQUAL: TOKEN_EQUAL);
-        case '<':  return add_token(s, scanner_match(s, '=') ? TOKEN_LESS_EQUAL : TOKEN_LESS);
-        case '>':  return add_token(s, scanner_match(s, '=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
+        case '!':  return add_token_for(s, '=', TOKEN_BANG_EQUAL, TOKEN_BANG);
+        case '=':  return add_token_for(s, '=', TOKEN_EQUAL_EQUAL, TOKEN_EQUAL);
+        case '<':  return add_token_for(s, '=', TOKEN_LESS_EQUAL, TOKEN_LESS);
+        case '>':  return add_token_for(s, '=', TOKEN_GREATER_EQUAL, TOKEN_GREATER);
         case '"':  return scan_string(s);
         case '/':  return (scanner_match(s, '/')) ? scan_comment(s) : add_token(s, TOKEN_SLASH);
         case '\r': break;
